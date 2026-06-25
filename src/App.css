@@ -1,0 +1,178 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap");
+
+/* =========================================================
+   Reflex Rush – Design
+   Vollbild-Fläche als ein großer Button. Die Farbe trägt den
+   Spielzustand, eine riesige Monospace-Zahl ist der Held,
+   Visier-Ecken sind das Wiedererkennungselement.
+   ========================================================= */
+
+.stage {
+  /* Zustands-Variablen (Standard = idle), unten je Phase überschrieben */
+  --bg: #15161d;
+  --fg: #f2efe9;
+  --edge: rgba(242, 239, 233, 0.22);
+
+  position: relative;
+  height: 100vh;
+  height: 100dvh; /* moderner Wert: keine Sprünge durch die Mobil-Adressleiste */
+  width: 100%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  cursor: pointer;
+  outline: none;
+
+  color: var(--fg);
+  background-color: var(--bg);
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  transition: background-color 200ms ease, color 200ms ease;
+
+  /* Touch-freundlich: keine Auswahl, kein Tap-Highlight, keine 300ms-Verzögerung */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Sanfte Tiefe an den Rändern, ohne die Farb-Transition zu stören */
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(130% 100% at 50% 32%, transparent 55%, rgba(0, 0, 0, 0.5) 100%);
+}
+
+/* ---- Farben je Spielzustand ----
+   Bernstein = bereithalten · Grün = los · Rot = Fehlstart      */
+.stage[data-phase="idle"]    { --bg: #15161d; --fg: #f2efe9; --edge: rgba(242, 239, 233, 0.22); }
+.stage[data-phase="result"]  { --bg: #15161d; --fg: #f2efe9; --edge: rgba(242, 239, 233, 0.22); }
+.stage[data-phase="waiting"] { --bg: #ff8a3d; --fg: #2a1402; --edge: rgba(42, 20, 2, 0.32); }
+.stage[data-phase="go"]      { --bg: #14e08a; --fg: #04261a; --edge: rgba(4, 38, 26, 0.4); transition: none; }
+.stage[data-phase="tooSoon"] { --bg: #dd2e35; --fg: #fff1f0; --edge: rgba(255, 241, 240, 0.4); }
+/* Grün schaltet ohne Transition = sofort, damit die Zeitmessung fair bleibt */
+
+.stage:focus-visible {
+  box-shadow: inset 0 0 0 3px var(--fg);
+}
+
+/* ---- Kopfzeile (HUD) ---- */
+.hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(18px, 4.5vw, 30px);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: clamp(11px, 2.6vw, 13px);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--fg);
+  opacity: 0.62;
+}
+.hud__best { font-weight: 700; }
+
+/* ---- Visier-Ecken ---- */
+.bracket {
+  position: absolute;
+  z-index: 2;
+  width: clamp(22px, 6vw, 40px);
+  height: clamp(22px, 6vw, 40px);
+  margin: clamp(14px, 3.5vw, 26px);
+  border: 2px solid var(--edge);
+  pointer-events: none;
+  transition: border-color 200ms ease;
+}
+.bracket--tl { top: 0; left: 0; border-right: none; border-bottom: none; }
+.bracket--tr { top: 0; right: 0; border-left: none; border-bottom: none; }
+.bracket--bl { bottom: 0; left: 0; border-right: none; border-top: none; }
+.bracket--br { bottom: 0; right: 0; border-left: none; border-top: none; }
+
+/* ---- Mitte: Titel / Zahl / Hinweis ---- */
+.core {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 2.5vw, 18px);
+  padding: 24px;
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(2.6rem, 12vw, 6rem);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+
+.readout {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.12em;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  animation: pop 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.readout__num {
+  font-weight: 700;
+  font-size: clamp(4.5rem, 26vw, 11rem);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums; /* Ziffern springen nicht in der Breite */
+}
+.readout__unit {
+  font-weight: 500;
+  font-size: clamp(1.4rem, 6vw, 2.4rem);
+  opacity: 0.6;
+}
+
+.hint {
+  margin: 0;
+  max-width: 24ch;
+  font-size: clamp(0.95rem, 3.5vw, 1.15rem);
+  font-weight: 500;
+  color: var(--fg);
+  opacity: 0.72;
+}
+
+/* ---- Bewegung, dezent eingesetzt ---- */
+.stage[data-phase="idle"] .hint { animation: breathe 2.6s ease-in-out infinite; }
+.stage[data-phase="go"] .title { animation: goPop 140ms ease-out; }
+.stage[data-phase="tooSoon"] .core { animation: shake 360ms ease; }
+
+@keyframes pop {
+  from { transform: scale(0.86); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+@keyframes goPop {
+  from { transform: scale(0.7); }
+  to   { transform: scale(1); }
+}
+@keyframes breathe {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.82; }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-10px); }
+  40% { transform: translateX(10px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+
+/* Wer reduzierte Bewegung wünscht, bekommt keine Animationen */
+@media (prefers-reduced-motion: reduce) {
+  .stage,
+  .stage * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
